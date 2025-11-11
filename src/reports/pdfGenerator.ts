@@ -131,122 +131,106 @@ export async function generateExecutivePDF(
 }
 
 function addCoverPage(doc: PDFKit.PDFDocument, data: ReportData) {
-  const pageWidth = doc.page.width;
-  const pageHeight = doc.page.height;
-  const contentWidth = pageWidth - 100; // 50pt margins
+    const pageWidth = doc.page.width;
+    const contentWidth = pageWidth - 100;
+    const pageHeight = doc.page.height;
 
-  // === HEADER BAND ===
-  const headerH = 280;
-  doc.save();
-  doc.rect(0, 0, pageWidth, headerH).fill('#0f172a');
-  doc.restore();
+    // === HEADER BAND ===
+    const headerH = 260;
+    doc.rect(0, 0, pageWidth, headerH).fill('#0f172a');
 
-  // === LOGO / MONOGRAM ===
-  doc.save();
-  doc.circle(pageWidth / 2, 50, 28).fill('#3b82f6');
-  doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(18)
-     .text('TDI', 50, 38, { align: 'center', width: contentWidth });
-  doc.restore();
+    // === HEADER TEXT ===
+    const center = (y: number, txt: string, size: number, font = 'Helvetica', color = '#fff') => {
+        doc.font(font).fontSize(size).fillColor(color);
+        const h = doc.heightOfString(txt, { width: contentWidth, align: 'center' });
+        doc.text(txt, 50, y, { width: contentWidth, align: 'center' });
+        return y + h;
+    };
 
-  // === STACKED HEADER TEXT ===
-  let y = 100;
-  const writeCentered = (text: string, yPos: number, size: number, font = 'Helvetica', color = '#ffffff') => {
-    doc.fillColor(color).font(font).fontSize(size);
-    const h = doc.heightOfString(text, { width: contentWidth, align: 'center' });
-    doc.text(text, 50, yPos, { width: contentWidth, align: 'center' });
-    return yPos + h;
-  };
+    let y = 90;
+    y = center(y, 'Executive Technical Debt Report', 34, 'Helvetica-Bold') + 10;
+    y = center(y, data.projectName, 20, 'Helvetica', '#cbd5e1') + 6;
 
-  y = writeCentered('Executive Technical Debt Report', y, 36, 'Helvetica-Bold', '#ffffff') + 12;
-  y = writeCentered(data.projectName, y, 20, 'Helvetica', '#cbd5e1') + 8;
+    const dateStr = new Date(data.scanDate).toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric'
+    });
+    y = center(y, `Generated: ${dateStr}`, 11, 'Helvetica', '#94a3b8') + 4;
+    y = center(y, 'Comprehensive Analysis • Code Quality • AI • Security', 9, 'Helvetica', '#94a3b8');
 
-  const dateStr = `Generated: ${new Date(data.scanDate).toLocaleDateString('en-US', {
-    year: 'numeric', month: 'long', day: 'numeric'
-  })}`;
-  y = writeCentered(dateStr, y, 11, 'Helvetica', '#94a3b8') + 6;
-  y = writeCentered('Comprehensive Analysis: Code Quality • AI Detection • Security Audit', y, 9, 'Helvetica', '#94a3b8');
+    // === BADGE AREA ===
+    const top = y + 40;
+    const bottom = pageHeight - 250; // leave guaranteed space for KPI row
 
-  // === BADGE (responsive, non-overlapping) ===
-  const score = data.metrics.codeQualityScore;
-  const badgeColor = score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444';
-  const statusText = score >= 80 ? 'EXCELLENT' : score >= 60 ? 'GOOD' : 'NEEDS ATTENTION';
+    const badgeAvailable = bottom - top;
 
-  // Define safe vertical space for badge+labels (between header band and KPI area)
-  const topSafe = headerH + 16;
-  // keep ~160px at bottom for KPI previews; this is your card row height + padding
-  const bottomReserve = 160;
-  const bottomSafe = pageHeight - bottomReserve;
+    // Measure text block height
+    doc.font('Helvetica-Bold').fontSize(12);
+    const h1 = doc.heightOfString('HEALTH SCORE', { width: contentWidth, align: 'center' });
 
-  // Measure labels to reserve space below the circle
-  doc.font('Helvetica-Bold').fontSize(13);
-  const healthLabelH = doc.heightOfString('HEALTH SCORE', { width: contentWidth, align: 'center' });
-  doc.font('Helvetica').fontSize(11);
-  const statusLabelH = doc.heightOfString(statusText, { width: contentWidth, align: 'center' });
-  const labelBlock = healthLabelH + 6 + statusLabelH + 16; // labels + spacing
+    doc.font('Helvetica').fontSize(11);
+    const h2 = doc.heightOfString('text', { width: contentWidth, align: 'center' });
 
-  // Compute radius so everything fits: [topSafe .. bottomSafe - labelBlock]
-  const available = Math.max(0, (bottomSafe - labelBlock) - topSafe);
-  const radius = Math.max(56, Math.min(82, Math.floor(available / 2))); // clamp for aesthetics
-  const centerY = topSafe + radius;
+    const labelBlock = h1 + h2 + 30; // padding
 
-  // Draw rings
-  doc.save();
-  doc.lineWidth(3).strokeColor(badgeColor).circle(pageWidth / 2, centerY, radius + 6).stroke();
-  doc.circle(pageWidth / 2, centerY, radius).fill(badgeColor);
-  doc.circle(pageWidth / 2, centerY, radius - 10).fill('#ffffff');
-  doc.restore();
+    // === FINAL radius (math-based, no overlap possible)
+    const maxCircleArea = badgeAvailable - labelBlock;
+    const radius = Math.max(40, Math.min(70, Math.floor(maxCircleArea / 2)));
 
-  // Score number
-  doc.fillColor(badgeColor).font('Helvetica-Bold').fontSize(56)
-     .text(String(score), 50, centerY - 30, { width: contentWidth, align: 'center' });
+    const centerY = top + radius;
 
-  // Labels directly under the circle (measured)
-  let labelY = centerY + radius + 12;
-  doc.font('Helvetica-Bold').fontSize(13).fillColor('#64748b')
-     .text('HEALTH SCORE', 50, labelY, { width: contentWidth, align: 'center' });
-  labelY += healthLabelH + 6;
-  doc.font('Helvetica').fontSize(11).fillColor(badgeColor)
-     .text(statusText, 50, labelY, { width: contentWidth, align: 'center' });
-  labelY += statusLabelH;
+    // === DRAW BADGE ===
+    const score = data.metrics.codeQualityScore;
+    const color = score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444';
+    const status = score >= 80 ? 'EXCELLENT' : score >= 60 ? 'GOOD' : 'NEEDS ATTENTION';
 
-  // === KPI PREVIEW CARDS (always below the label block) ===
-  const yStart = Math.max(labelY + 40, pageHeight - bottomReserve + 20); // ensure clear gap
-  const boxWidth = 150;
-  const boxHeight = 85;
-  const gap = 22;
+    // Rings
+    doc.circle(pageWidth / 2, centerY, radius + 6).lineWidth(3).stroke(color);
+    doc.circle(pageWidth / 2, centerY, radius).fill(color);
+    doc.circle(pageWidth / 2, centerY, radius - 12).fill('#ffffff');
 
-  // Card 1
-  doc.save();
-  doc.roundedRect(50, yStart, boxWidth, boxHeight, 8).fillAndStroke('#f8fafc', '#e2e8f0');
-  doc.fillColor('#64748b').font('Helvetica').fontSize(9).text('Technical Debt Ratio', 60, yStart + 18, { width: boxWidth - 20 });
-  doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(26)
-     .text(`${data.metrics.technicalDebtRatio.toFixed(1)}%`, 60, yStart + 38, { width: boxWidth - 20 });
-  doc.restore();
+    // Score
+    doc.font('Helvetica-Bold').fillColor(color).fontSize(48)
+        .text(String(score), 50, centerY - 24, {
+            width: contentWidth,
+            align: 'center'
+        });
 
-  // Card 2
-  const securityScore = data.metrics.securityPosture;
-  const secColor = securityScore >= 80 ? '#10b981' : securityScore >= 60 ? '#f59e0b' : '#ef4444';
-  const b2x = 50 + boxWidth + gap;
-  doc.save();
-  doc.roundedRect(b2x, yStart, boxWidth, boxHeight, 8).fillAndStroke('#f8fafc', '#e2e8f0');
-  doc.fillColor('#64748b').font('Helvetica').fontSize(9).text('Security Posture', b2x + 10, yStart + 18, { width: boxWidth - 20 });
-  doc.fillColor(secColor).font('Helvetica-Bold').fontSize(26).text(String(securityScore), b2x + 10, yStart + 38, { width: boxWidth - 20 });
-  doc.restore();
+    // Labels
+    let ly = centerY + radius + 10;
+    doc.font('Helvetica-Bold').fontSize(12).fillColor('#64748b')
+        .text('HEALTH SCORE', 50, ly, { width: contentWidth, align: 'center' });
 
-  // Card 3 (optional)
-  if (data.aiSummary) {
-    const b3x = 50 + (boxWidth + gap) * 2;
-    doc.save();
-    doc.roundedRect(b3x, yStart, boxWidth, boxHeight, 8).fillAndStroke('#f8fafc', '#e2e8f0');
-    doc.fillColor('#64748b').font('Helvetica').fontSize(9).text('AI-Generated Code', b3x + 10, yStart + 18, { width: boxWidth - 20 });
-    doc.fillColor('#3b82f6').font('Helvetica-Bold').fontSize(26).text(`${data.aiSummary.aiCodePercentage}%`, b3x + 10, yStart + 38, { width: boxWidth - 20 });
-    doc.restore();
-  }
+    ly += h1 + 6;
+    doc.font('Helvetica').fontSize(11).fillColor(color)
+        .text(status, 50, ly, { width: contentWidth, align: 'center' });
 
-  // Footer (optional)
-  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica')
-     .text('Confidential - For Executive Use Only', 50, pageHeight - 92, { align: 'center', width: contentWidth });
+    // === KPI ROW (ALWAYS BELOW EVERYTHING) ===
+    const kpiY = bottom + 20;
+    const boxWidth = 150;
+    const boxHeight = 85;
+    const gap = 22;
+
+    const drawBox = (x: number, label: string, val: string, col = '#1f2937') => {
+        doc.roundedRect(x, kpiY, boxWidth, boxHeight, 8)
+            .fill('#f8fafc').stroke('#e2e8f0');
+        doc.fillColor('#64748b').fontSize(10).text(label, x + 10, kpiY + 16);
+        doc.fillColor(col).font('Helvetica-Bold').fontSize(26)
+            .text(val, x + 10, kpiY + 36);
+    };
+
+    drawBox(50, 'Technical Debt Ratio', `${data.metrics.technicalDebtRatio.toFixed(1)}%`);
+    const sec = data.metrics.securityPosture;
+    drawBox(50 + boxWidth + gap, 'Security Posture', String(sec),
+            sec >= 80 ? '#10b981' : sec >= 60 ? '#f59e0b' : '#ef4444');
+
+    if (data.aiSummary) {
+        drawBox(50 + (boxWidth + gap) * 2,
+                'AI-Generated Code',
+                `${data.aiSummary.aiCodePercentage}%`,
+                '#3b82f6');
+    }
 }
+
 
 
 
