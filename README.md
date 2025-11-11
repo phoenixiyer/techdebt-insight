@@ -9,7 +9,7 @@ Think of this as a **baseline, extensible framework** to *discover, visualize, a
 ## ✨ What it does (quick)
 
 * Scans code for hotspots (long files, complexity, duplication, missing tests), dependency drift, security smells.
-* Generates **CTO-ready reports** (Markdown + optional PDF) with prioritized actions, effort/impact, and a 2–4 week plan.
+* Generates **Exec ready reports** (Markdown + optional PDF) with prioritized actions, effort/impact, and a 2–4 week plan.
 * Includes **AI Code Detection** to flag likely AI-generated patterns (heuristic, configurable).
 * Works locally or in CI, across monorepos/services.
 
