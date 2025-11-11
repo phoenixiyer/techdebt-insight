@@ -72,88 +72,108 @@ export async function generateExecutivePDF(
 
 function addCoverPage(doc: PDFKit.PDFDocument, data: ReportData) {
     // Professional header with dark blue background
-    doc.rect(0, 0, 595, 250).fill('#0f172a');
+    doc.rect(0, 0, 595, 280).fill('#0f172a');
     
-    // Logo area (placeholder)
-    doc.circle(297.5, 60, 25).fill('#3b82f6');
+    // Logo area (placeholder circle with initials)
+    doc.circle(297.5, 50, 28).fill('#3b82f6');
     doc.fillColor('#ffffff')
-       .fontSize(20)
+       .fontSize(18)
        .font('Helvetica-Bold')
-       .text('TD', 50, 48, { align: 'center', width: 495 });
+       .text('TDI', 50, 38, { align: 'center', width: 495 });
     
-    // Title
+    // Main Title - properly spaced
     doc.fillColor('#ffffff')
-       .fontSize(42)
+       .fontSize(38)
        .font('Helvetica-Bold')
-       .text('Executive Technical Debt Report', 50, 110, { align: 'center', width: 495 });
+       .text('Executive Technical Debt Report', 50, 105, { 
+           align: 'center', 
+           width: 495,
+           lineGap: 5
+       });
     
-    doc.fontSize(20)
+    // Project Name - with proper spacing below title
+    doc.fontSize(22)
        .font('Helvetica')
        .fillColor('#94a3b8')
-       .text(data.projectName, 50, 165, { align: 'center', width: 495 });
+       .text(data.projectName, 50, 175, { 
+           align: 'center', 
+           width: 495,
+           lineGap: 3
+       });
     
-    // Date and report type
-    doc.fontSize(12)
+    // Date - properly spaced
+    doc.fontSize(11)
        .fillColor('#cbd5e1')
+       .font('Helvetica')
        .text(`Generated: ${new Date(data.scanDate).toLocaleDateString('en-US', {
            year: 'numeric',
            month: 'long',
            day: 'numeric'
-       })}`, 50, 210, { align: 'center', width: 495 });
+       })}`, 50, 220, { align: 'center', width: 495 });
     
-    doc.fontSize(10)
-       .text('Comprehensive Analysis: Code Quality • AI Detection • Security Audit', 50, 230, { align: 'center', width: 495 });
+    // Report type subtitle
+    doc.fontSize(9)
+       .fillColor('#94a3b8')
+       .text('Comprehensive Analysis: Code Quality • AI Detection • Security Audit', 50, 245, { 
+           align: 'center', 
+           width: 495 
+       });
     
-    // Health Score Badge with ring
+    // Health Score Badge with ring - adjusted position
     const healthScore = data.metrics.codeQualityScore;
     const color = healthScore >= 80 ? '#10b981' : healthScore >= 60 ? '#f59e0b' : '#ef4444';
     const statusText = healthScore >= 80 ? 'EXCELLENT' : healthScore >= 60 ? 'GOOD' : 'NEEDS ATTENTION';
     
-    // Outer ring
-    doc.circle(297.5, 420, 90).stroke(color);
-    doc.circle(297.5, 420, 85).fill(color);
+    const badgeY = 430; // Center position for badge
     
-    // Inner circle
-    doc.circle(297.5, 420, 75).fill('#ffffff');
+    // Outer ring with stroke
+    doc.circle(297.5, badgeY, 90).lineWidth(3).stroke(color);
+    doc.circle(297.5, badgeY, 85).fill(color);
     
-    // Score
+    // Inner white circle
+    doc.circle(297.5, badgeY, 75).fill('#ffffff');
+    
+    // Score number
     doc.fillColor(color)
        .fontSize(56)
        .font('Helvetica-Bold')
-       .text(healthScore.toString(), 50, 390, { align: 'center', width: 495 });
+       .text(healthScore.toString(), 50, badgeY - 30, { align: 'center', width: 495 });
     
-    doc.fontSize(14)
-       .font('Helvetica')
-       .text('HEALTH SCORE', 50, 450, { align: 'center', width: 495 });
-    
-    doc.fontSize(12)
+    // "HEALTH SCORE" label
+    doc.fontSize(13)
        .font('Helvetica-Bold')
        .fillColor('#64748b')
-       .text(statusText, 50, 470, { align: 'center', width: 495 });
+       .text('HEALTH SCORE', 50, badgeY + 60, { align: 'center', width: 495 });
     
-    // Key metrics preview boxes
-    const yStart = 550;
+    // Status text
+    doc.fontSize(11)
+       .font('Helvetica')
+       .fillColor(color)
+       .text(statusText, 50, badgeY + 80, { align: 'center', width: 495 });
+    
+    // Key metrics preview boxes - properly positioned
+    const yStart = 570;
     const boxWidth = 150;
-    const boxHeight = 80;
-    const gap = 20;
+    const boxHeight = 85;
+    const gap = 22;
     
     // Box 1: Technical Debt
-    doc.roundedRect(50, yStart, boxWidth, boxHeight, 5).fill('#f8fafc');
-    doc.fillColor('#64748b').fontSize(10).font('Helvetica').text('Technical Debt Ratio', 60, yStart + 15, { width: boxWidth - 20 });
-    doc.fillColor('#0f172a').fontSize(24).font('Helvetica-Bold').text(`${data.metrics.technicalDebtRatio.toFixed(1)}%`, 60, yStart + 35, { width: boxWidth - 20 });
+    doc.roundedRect(50, yStart, boxWidth, boxHeight, 8).fill('#f8fafc').stroke('#e2e8f0').lineWidth(1);
+    doc.fillColor('#64748b').fontSize(9).font('Helvetica').text('Technical Debt Ratio', 60, yStart + 18, { width: boxWidth - 20 });
+    doc.fillColor('#0f172a').fontSize(26).font('Helvetica-Bold').text(`${data.metrics.technicalDebtRatio.toFixed(1)}%`, 60, yStart + 38, { width: boxWidth - 20 });
     
     // Box 2: Security
     const securityScore = data.metrics.securityPosture;
     const secColor = securityScore >= 80 ? '#10b981' : securityScore >= 60 ? '#f59e0b' : '#ef4444';
-    doc.roundedRect(50 + boxWidth + gap, yStart, boxWidth, boxHeight, 5).fill('#f8fafc');
-    doc.fillColor('#64748b').fontSize(10).font('Helvetica').text('Security Posture', 60 + boxWidth + gap, yStart + 15, { width: boxWidth - 20 });
-    doc.fillColor(secColor).fontSize(24).font('Helvetica-Bold').text(securityScore.toString(), 60 + boxWidth + gap, yStart + 35, { width: boxWidth - 20 });
+    doc.roundedRect(50 + boxWidth + gap, yStart, boxWidth, boxHeight, 8).fill('#f8fafc').stroke('#e2e8f0').lineWidth(1);
+    doc.fillColor('#64748b').fontSize(9).font('Helvetica').text('Security Posture', 60 + boxWidth + gap, yStart + 18, { width: boxWidth - 20 });
+    doc.fillColor(secColor).fontSize(26).font('Helvetica-Bold').text(securityScore.toString(), 60 + boxWidth + gap, yStart + 38, { width: boxWidth - 20 });
     
     // Box 3: AI Code
     if (data.aiSummary) {
-        doc.roundedRect(50 + (boxWidth + gap) * 2, yStart, boxWidth, boxHeight, 5).fill('#f8fafc');
-        doc.fillColor('#64748b').fontSize(10).font('Helvetica').text('AI-Generated Code', 60 + (boxWidth + gap) * 2, yStart + 15, { width: boxWidth - 20 });
-        doc.fillColor('#3b82f6').fontSize(24).font('Helvetica-Bold').text(`${data.aiSummary.aiCodePercentage}%`, 60 + (boxWidth + gap) * 2, yStart + 35, { width: boxWidth - 20 });
+        doc.roundedRect(50 + (boxWidth + gap) * 2, yStart, boxWidth, boxHeight, 8).fill('#f8fafc').stroke('#e2e8f0').lineWidth(1);
+        doc.fillColor('#64748b').fontSize(9).font('Helvetica').text('AI-Generated Code', 60 + (boxWidth + gap) * 2, yStart + 18, { width: boxWidth - 20 });
+        doc.fillColor('#3b82f6').fontSize(26).font('Helvetica-Bold').text(`${data.aiSummary.aiCodePercentage}%`, 60 + (boxWidth + gap) * 2, yStart + 38, { width: boxWidth - 20 });
     }
     
     // Footer
