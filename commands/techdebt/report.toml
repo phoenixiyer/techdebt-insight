@@ -1,15 +1,32 @@
 prompt = """
-Generate a comprehensive CTO-level technical debt report for the repository at: {{args}}
+Generate a comprehensive executive technical debt report for the repository at: {{args}}
+
+This command will automatically:
+1. Scan the codebase for technical debt and code quality issues
+2. Run AI code detection to identify AI-generated code patterns
+3. Audit dependencies for security vulnerabilities
+4. Generate a professional executive PDF report
 
 Execute these tools in order:
 1. scan_repo with { "repoPath": "{{args}}" }
 2. dep_audit with { "repoPath": "{{args}}" }
 3. generate_report with { "scanResults": "<scan_json>", "auditResults": "<audit_json>", "repoPath": "{{args}}", "projectName": "<project_name>" }
 
-The report will be saved as:
-- Markdown: techdebt-cto-report-YYYY-MM-DD.md
-- PDF: techdebt-cto-report-YYYY-MM-DD.pdf (professional executive format)
+The comprehensive report will include:
+📊 Technical Debt Analysis (SQALE, DORA metrics, complexity)
+🤖 AI Code Detection (patterns, confidence, risk assessment)
+🔒 Security Audit (vulnerabilities, outdated packages)
+💡 Strategic Recommendations (prioritized action items)
 
-Both files will be saved in the scanned repository directory.
-Provide an executive summary of the key findings.
+Output files saved in repository:
+- Markdown: techdebt-cto-report-YYYY-MM-DD.md (detailed technical report)
+- PDF: techdebt-cto-report-YYYY-MM-DD.pdf (executive-ready presentation)
+
+The PDF features professional styling with:
+- Color-coded health score badge
+- Visual progress bars and charts
+- Severity-based vulnerability badges
+- Board-ready layout for C-level executives
+
+Provide an executive summary of the key findings after generation.
 """

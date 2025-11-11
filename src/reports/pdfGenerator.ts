@@ -54,6 +54,12 @@ export async function generateExecutivePDF(
             doc.addPage();
         }
 
+        // === SECURITY AUDIT ===
+        if (data.auditSummary) {
+            addSecurityAudit(doc, data);
+            doc.addPage();
+        }
+
         // === RECOMMENDATIONS ===
         addRecommendations(doc, data);
 
@@ -65,45 +71,96 @@ export async function generateExecutivePDF(
 }
 
 function addCoverPage(doc: PDFKit.PDFDocument, data: ReportData) {
-    // Header with gradient effect (simulated with rectangles)
-    doc.rect(0, 0, 595, 200).fill('#1a365d');
+    // Professional header with dark blue background
+    doc.rect(0, 0, 595, 250).fill('#0f172a');
+    
+    // Logo area (placeholder)
+    doc.circle(297.5, 60, 25).fill('#3b82f6');
+    doc.fillColor('#ffffff')
+       .fontSize(20)
+       .font('Helvetica-Bold')
+       .text('TD', 50, 48, { align: 'center', width: 495 });
     
     // Title
     doc.fillColor('#ffffff')
-       .fontSize(36)
+       .fontSize(42)
        .font('Helvetica-Bold')
-       .text('Technical Debt Report', 50, 80, { align: 'center' });
+       .text('Executive Technical Debt Report', 50, 110, { align: 'center', width: 495 });
     
-    doc.fontSize(18)
+    doc.fontSize(20)
        .font('Helvetica')
-       .text(data.projectName, 50, 130, { align: 'center' });
+       .fillColor('#94a3b8')
+       .text(data.projectName, 50, 165, { align: 'center', width: 495 });
     
-    // Date
+    // Date and report type
     doc.fontSize(12)
+       .fillColor('#cbd5e1')
        .text(`Generated: ${new Date(data.scanDate).toLocaleDateString('en-US', {
            year: 'numeric',
            month: 'long',
            day: 'numeric'
-       })}`, 50, 250, { align: 'center' });
+       })}`, 50, 210, { align: 'center', width: 495 });
     
-    // Health Score Badge
+    doc.fontSize(10)
+       .text('Comprehensive Analysis: Code Quality • AI Detection • Security Audit', 50, 230, { align: 'center', width: 495 });
+    
+    // Health Score Badge with ring
     const healthScore = data.metrics.codeQualityScore;
     const color = healthScore >= 80 ? '#10b981' : healthScore >= 60 ? '#f59e0b' : '#ef4444';
+    const statusText = healthScore >= 80 ? 'EXCELLENT' : healthScore >= 60 ? 'GOOD' : 'NEEDS ATTENTION';
     
-    doc.circle(297.5, 400, 80).fill(color);
-    doc.fillColor('#ffffff')
-       .fontSize(48)
+    // Outer ring
+    doc.circle(297.5, 420, 90).stroke(color);
+    doc.circle(297.5, 420, 85).fill(color);
+    
+    // Inner circle
+    doc.circle(297.5, 420, 75).fill('#ffffff');
+    
+    // Score
+    doc.fillColor(color)
+       .fontSize(56)
        .font('Helvetica-Bold')
-       .text(healthScore.toString(), 50, 380, { align: 'center', width: 495 });
+       .text(healthScore.toString(), 50, 390, { align: 'center', width: 495 });
     
-    doc.fontSize(16)
+    doc.fontSize(14)
        .font('Helvetica')
-       .text('Health Score', 50, 450, { align: 'center', width: 495 });
+       .text('HEALTH SCORE', 50, 450, { align: 'center', width: 495 });
+    
+    doc.fontSize(12)
+       .font('Helvetica-Bold')
+       .fillColor('#64748b')
+       .text(statusText, 50, 470, { align: 'center', width: 495 });
+    
+    // Key metrics preview boxes
+    const yStart = 550;
+    const boxWidth = 150;
+    const boxHeight = 80;
+    const gap = 20;
+    
+    // Box 1: Technical Debt
+    doc.roundedRect(50, yStart, boxWidth, boxHeight, 5).fill('#f8fafc');
+    doc.fillColor('#64748b').fontSize(10).font('Helvetica').text('Technical Debt Ratio', 60, yStart + 15, { width: boxWidth - 20 });
+    doc.fillColor('#0f172a').fontSize(24).font('Helvetica-Bold').text(`${data.metrics.technicalDebtRatio.toFixed(1)}%`, 60, yStart + 35, { width: boxWidth - 20 });
+    
+    // Box 2: Security
+    const securityScore = data.metrics.securityPosture;
+    const secColor = securityScore >= 80 ? '#10b981' : securityScore >= 60 ? '#f59e0b' : '#ef4444';
+    doc.roundedRect(50 + boxWidth + gap, yStart, boxWidth, boxHeight, 5).fill('#f8fafc');
+    doc.fillColor('#64748b').fontSize(10).font('Helvetica').text('Security Posture', 60 + boxWidth + gap, yStart + 15, { width: boxWidth - 20 });
+    doc.fillColor(secColor).fontSize(24).font('Helvetica-Bold').text(securityScore.toString(), 60 + boxWidth + gap, yStart + 35, { width: boxWidth - 20 });
+    
+    // Box 3: AI Code
+    if (data.aiSummary) {
+        doc.roundedRect(50 + (boxWidth + gap) * 2, yStart, boxWidth, boxHeight, 5).fill('#f8fafc');
+        doc.fillColor('#64748b').fontSize(10).font('Helvetica').text('AI-Generated Code', 60 + (boxWidth + gap) * 2, yStart + 15, { width: boxWidth - 20 });
+        doc.fillColor('#3b82f6').fontSize(24).font('Helvetica-Bold').text(`${data.aiSummary.aiCodePercentage}%`, 60 + (boxWidth + gap) * 2, yStart + 35, { width: boxWidth - 20 });
+    }
     
     // Footer
-    doc.fillColor('#64748b')
-       .fontSize(10)
-       .text('Confidential - Executive Use Only', 50, 750, { align: 'center' });
+    doc.fillColor('#94a3b8')
+       .fontSize(9)
+       .font('Helvetica')
+       .text('Confidential - For Executive Use Only', 50, 750, { align: 'center', width: 495 });
 }
 
 function addExecutiveSummary(doc: PDFKit.PDFDocument, data: ReportData) {
@@ -236,23 +293,81 @@ function addAIAnalysis(doc: PDFKit.PDFDocument, aiSummary: AICodeSummary) {
     
     let yPos = 150;
     
-    // AI Code Statistics
-    const aiStats = [
-        { label: 'Total Files Analyzed', value: aiSummary.totalFiles.toString() },
-        { label: 'AI-Generated Files', value: `${aiSummary.aiGeneratedFiles} (${((aiSummary.aiGeneratedFiles / aiSummary.totalFiles) * 100).toFixed(1)}%)` },
-        { label: 'Human-Written Files', value: `${aiSummary.humanWrittenFiles} (${((aiSummary.humanWrittenFiles / aiSummary.totalFiles) * 100).toFixed(1)}%)` },
-        { label: 'Mixed/Uncertain Files', value: aiSummary.mixedFiles.toString() },
-        { label: 'AI Code Percentage', value: `${aiSummary.aiCodePercentage}%` },
-        { label: 'Detection Confidence', value: `${aiSummary.confidenceScore}%` }
+    // Overview box with visual indicator
+    const aiPercentage = aiSummary.aiCodePercentage;
+    const confidence = aiSummary.confidenceScore;
+    const riskLevel = aiPercentage > 50 ? 'HIGH' : aiPercentage > 25 ? 'MEDIUM' : 'LOW';
+    const riskColor = aiPercentage > 50 ? '#ef4444' : aiPercentage > 25 ? '#f59e0b' : '#10b981';
+    
+    // AI Detection Summary Box
+    doc.roundedRect(50, yPos, 495, 100, 5).fill('#f8fafc');
+    doc.fillColor('#0f172a').fontSize(16).font('Helvetica-Bold').text('AI Code Detection Summary', 70, yPos + 20);
+    
+    // Three columns
+    const col1 = 70;
+    const col2 = 230;
+    const col3 = 390;
+    
+    // Column 1: AI Percentage
+    doc.fillColor('#64748b').fontSize(10).font('Helvetica').text('AI-Generated Code', col1, yPos + 50);
+    doc.fillColor('#3b82f6').fontSize(28).font('Helvetica-Bold').text(`${aiPercentage}%`, col1, yPos + 65);
+    
+    // Column 2: Confidence
+    doc.fillColor('#64748b').fontSize(10).font('Helvetica').text('Detection Confidence', col2, yPos + 50);
+    doc.fillColor('#0f172a').fontSize(28).font('Helvetica-Bold').text(`${confidence}%`, col2, yPos + 65);
+    
+    // Column 3: Risk Level
+    doc.fillColor('#64748b').fontSize(10).font('Helvetica').text('Risk Assessment', col3, yPos + 50);
+    doc.fillColor(riskColor).fontSize(20).font('Helvetica-Bold').text(riskLevel, col3, yPos + 68);
+    
+    yPos += 120;
+    
+    // Detailed Statistics
+    addSubsection(doc, 'File Classification', yPos);
+    yPos += 40;
+    
+    const totalFiles = aiSummary.totalFiles;
+    const fileStats = [
+        { 
+            label: 'AI-Generated Files', 
+            value: aiSummary.aiGeneratedFiles, 
+            percentage: ((aiSummary.aiGeneratedFiles / totalFiles) * 100).toFixed(1),
+            color: '#3b82f6'
+        },
+        { 
+            label: 'Human-Written Files', 
+            value: aiSummary.humanWrittenFiles, 
+            percentage: ((aiSummary.humanWrittenFiles / totalFiles) * 100).toFixed(1),
+            color: '#10b981'
+        },
+        { 
+            label: 'Mixed/Uncertain Files', 
+            value: aiSummary.mixedFiles, 
+            percentage: ((aiSummary.mixedFiles / totalFiles) * 100).toFixed(1),
+            color: '#f59e0b'
+        }
     ];
     
-    aiStats.forEach(stat => {
-        addMetricRow(doc, yPos, stat.label, stat.value);
-        yPos += 25;
+    fileStats.forEach(stat => {
+        // Progress bar
+        const barWidth = 300;
+        const fillWidth = (parseFloat(stat.percentage) / 100) * barWidth;
+        
+        doc.fillColor('#374151').fontSize(11).font('Helvetica').text(stat.label, 50, yPos);
+        doc.fillColor('#64748b').fontSize(11).text(`${stat.value} files (${stat.percentage}%)`, 400, yPos);
+        
+        // Background bar
+        doc.roundedRect(50, yPos + 20, barWidth, 8, 4).fill('#e5e7eb');
+        // Fill bar
+        if (fillWidth > 0) {
+            doc.roundedRect(50, yPos + 20, fillWidth, 8, 4).fill(stat.color);
+        }
+        
+        yPos += 45;
     });
     
     // Top AI Patterns
-    yPos += 20;
+    yPos += 10;
     addSubsection(doc, 'Top AI Patterns Detected', yPos);
     yPos += 40;
     
@@ -293,6 +408,100 @@ function addAIAnalysis(doc: PDFKit.PDFDocument, aiSummary: AICodeSummary) {
         
         yPos += 30;
     });
+}
+
+function addSecurityAudit(doc: PDFKit.PDFDocument, data: ReportData) {
+    addSectionHeader(doc, 'Security & Dependency Audit');
+    
+    let yPos = 150;
+    const audit = data.auditSummary;
+    
+    if (!audit || !audit.summary) {
+        doc.fillColor('#64748b').fontSize(12).font('Helvetica').text('No security audit data available', 50, yPos);
+        return;
+    }
+    
+    // Security Overview Box
+    const totalVulns = audit.summary.totalVulnerabilities || 0;
+    const criticalVulns = audit.summary.criticalVulnerabilities || 0;
+    const outdated = audit.summary.outdatedPackages || 0;
+    
+    doc.roundedRect(50, yPos, 495, 100, 5).fill('#f8fafc');
+    doc.fillColor('#0f172a').fontSize(16).font('Helvetica-Bold').text('Security Summary', 70, yPos + 20);
+    
+    // Three columns
+    const col1 = 70;
+    const col2 = 230;
+    const col3 = 390;
+    
+    // Column 1: Total Vulnerabilities
+    doc.fillColor('#64748b').fontSize(10).font('Helvetica').text('Total Vulnerabilities', col1, yPos + 50);
+    const vulnColor = totalVulns > 10 ? '#ef4444' : totalVulns > 5 ? '#f59e0b' : '#10b981';
+    doc.fillColor(vulnColor).fontSize(28).font('Helvetica-Bold').text(totalVulns.toString(), col1, yPos + 65);
+    
+    // Column 2: Critical
+    doc.fillColor('#64748b').fontSize(10).font('Helvetica').text('Critical Issues', col2, yPos + 50);
+    doc.fillColor('#ef4444').fontSize(28).font('Helvetica-Bold').text(criticalVulns.toString(), col2, yPos + 65);
+    
+    // Column 3: Outdated Packages
+    doc.fillColor('#64748b').fontSize(10).font('Helvetica').text('Outdated Packages', col3, yPos + 50);
+    doc.fillColor('#f59e0b').fontSize(28).font('Helvetica-Bold').text(outdated.toString(), col3, yPos + 65);
+    
+    yPos += 120;
+    
+    // Vulnerability Breakdown
+    if (audit.vulnerabilities && audit.vulnerabilities.length > 0) {
+        addSubsection(doc, 'Top Vulnerabilities', yPos);
+        yPos += 40;
+        
+        const topVulns = audit.vulnerabilities.slice(0, 5);
+        topVulns.forEach((vuln: any) => {
+            const severityColor = vuln.severity === 'critical' ? '#ef4444' : 
+                                 vuln.severity === 'high' ? '#f59e0b' : 
+                                 vuln.severity === 'medium' ? '#3b82f6' : '#64748b';
+            
+            // Severity badge
+            doc.roundedRect(50, yPos, 60, 20, 3).fill(severityColor);
+            doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold')
+               .text(vuln.severity.toUpperCase(), 50, yPos + 5, { width: 60, align: 'center' });
+            
+            // Package and description
+            doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold')
+               .text(vuln.package || 'Unknown', 120, yPos);
+            doc.fillColor('#64748b').fontSize(9).font('Helvetica')
+               .text(vuln.title || vuln.description || 'No description', 120, yPos + 15, { width: 400 });
+            
+            yPos += 45;
+        });
+    }
+    
+    yPos += 10;
+    
+    // Outdated Packages
+    if (audit.outdated && audit.outdated.length > 0) {
+        addSubsection(doc, 'Outdated Dependencies', yPos);
+        yPos += 40;
+        
+        const topOutdated = audit.outdated.slice(0, 5);
+        topOutdated.forEach((pkg: any) => {
+            doc.fillColor('#374151').fontSize(11).font('Helvetica-Bold')
+               .text(pkg.package || pkg.name, 60, yPos);
+            doc.fillColor('#64748b').fontSize(10).font('Helvetica')
+               .text(`${pkg.current} → ${pkg.latest}`, 300, yPos);
+            
+            yPos += 25;
+        });
+    }
+    
+    // Remediation Time
+    yPos += 20;
+    if (audit.summary.estimatedFixTime) {
+        doc.roundedRect(50, yPos, 495, 60, 5).fill('#fef3c7');
+        doc.fillColor('#92400e').fontSize(12).font('Helvetica-Bold')
+           .text('⏱️ Estimated Remediation Time', 70, yPos + 15);
+        doc.fontSize(10).font('Helvetica')
+           .text(audit.summary.estimatedFixTime, 70, yPos + 35);
+    }
 }
 
 function addRecommendations(doc: PDFKit.PDFDocument, data: ReportData) {

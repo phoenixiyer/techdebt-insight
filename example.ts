@@ -725,6 +725,24 @@ server.registerTool(
         const scan = JSON.parse(scanResults);
         const audit = JSON.parse(auditResults);
         
+        // Run AI code detection
+        console.error('[TechDebt] 🤖 Running AI code detection...');
+        const files = await findFiles(repoPath, ['**/*.{js,ts,jsx,tsx,py,java,go,rs,c,cpp,cs,php,rb,swift,kt}']);
+        
+        const aiAnalyses: AICodeAnalysis[] = [];
+        for (const file of files) {
+            try {
+                const content = await readFile(file, 'utf-8');
+                const analysis = analyzeAICode(content, file);
+                aiAnalyses.push(analysis);
+            } catch (error) {
+                // Skip files that can't be read
+            }
+        }
+        
+        const aiSummary = generateAISummary(aiAnalyses);
+        console.error(`[TechDebt] ✅ AI Detection: ${aiSummary.aiCodePercentage}% AI-generated (${aiSummary.confidenceScore}% confidence)`);
+        
         // Determine overall health
         let overallHealth = 'Excellent';
         if (scan.summary.technicalDebt.sqaleRating === 'E' || scan.summary.technicalDebt.sqaleRating === 'D') {
@@ -918,7 +936,7 @@ Track these KPIs monthly:
             console.error(`[TechDebt] ❌ Failed to save CTO report: ${error.message}`);
         }
         
-        // Generate PDF report
+        // Generate PDF report with AI detection
         try {
             // Calculate enterprise metrics for PDF
             const enterpriseMetrics = calculateEnterpriseMetrics(scan);
@@ -928,11 +946,12 @@ Track these KPIs monthly:
                 scanDate: new Date().toISOString(),
                 metrics: enterpriseMetrics,
                 scanResults: scan,
-                aiSummary: scan.aiSummary,
+                aiSummary: aiSummary,
                 auditSummary: audit
             });
             
-            console.error(`[TechDebt] ✅ CTO Report (PDF) saved to: ${pdfPath}`);
+            console.error(`[TechDebt] ✅ Executive Report (PDF) saved to: ${pdfPath}`);
+            console.error(`[TechDebt] 📊 Report includes: Tech Debt Analysis + AI Code Detection + Security Audit`);
         } catch (error: any) {
             console.error(`[TechDebt] ⚠️ PDF generation failed: ${error.message}`);
             console.error(`[TechDebt] Markdown report is still available at: ${reportPath}`);
