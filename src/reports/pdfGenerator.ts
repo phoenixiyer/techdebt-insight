@@ -131,115 +131,124 @@ export async function generateExecutivePDF(
 }
 
 function addCoverPage(doc: PDFKit.PDFDocument, data: ReportData) {
-    // Professional header with dark blue background
-    doc.rect(0, 0, 595, 280).fill('#0f172a');
-    
-    // Logo area (placeholder circle with initials)
-    doc.circle(297.5, 50, 28).fill('#3b82f6');
-    doc.fillColor('#ffffff')
-       .fontSize(18)
-       .font('Helvetica-Bold')
-       .text('TDI', 50, 38, { align: 'center', width: 495 });
-    
-    // Main Title - properly spaced
-    doc.fillColor('#ffffff')
-       .fontSize(36)
-       .font('Helvetica-Bold')
-       .text('Executive Technical Debt Report', 50, 100, { 
-           align: 'center', 
-           width: 495
-       });
-    
-    // Project Name - with proper spacing below title
-    doc.fontSize(20)
-       .font('Helvetica')
-       .fillColor('#cbd5e1')
-       .text(data.projectName, 50, 155, { 
-           align: 'center', 
-           width: 495
-       });
-    
-    // Date - properly spaced
-    doc.fontSize(11)
-       .fillColor('#94a3b8')
-       .font('Helvetica')
-       .text(`Generated: ${new Date(data.scanDate).toLocaleDateString('en-US', {
-           year: 'numeric',
-           month: 'long',
-           day: 'numeric'
-       })}`, 50, 195, { align: 'center', width: 495 });
-    
-    // Report type subtitle
-    doc.fontSize(9)
-       .fillColor('#94a3b8')
-       .text('Comprehensive Analysis: Code Quality • AI Detection • Security Audit', 50, 220, { 
-           align: 'center', 
-           width: 495 
-       });
-    
-    // Health Score Badge with ring - adjusted position
-    const healthScore = data.metrics.codeQualityScore;
-    const color = healthScore >= 80 ? '#10b981' : healthScore >= 60 ? '#f59e0b' : '#ef4444';
-    const statusText = healthScore >= 80 ? 'EXCELLENT' : healthScore >= 60 ? 'GOOD' : 'NEEDS ATTENTION';
-    
-    const badgeY = 430; // Center position for badge
-    
-    // Outer ring with stroke
-    doc.circle(297.5, badgeY, 90).lineWidth(3).stroke(color);
-    doc.circle(297.5, badgeY, 85).fill(color);
-    
-    // Inner white circle
-    doc.circle(297.5, badgeY, 75).fill('#ffffff');
-    
-    // Score number
-    doc.fillColor(color)
-       .fontSize(56)
-       .font('Helvetica-Bold')
-       .text(healthScore.toString(), 50, badgeY - 30, { align: 'center', width: 495 });
-    
-    // "HEALTH SCORE" label
-    doc.fontSize(13)
-       .font('Helvetica-Bold')
-       .fillColor('#64748b')
-       .text('HEALTH SCORE', 50, badgeY + 60, { align: 'center', width: 495 });
-    
-    // Status text
-    doc.fontSize(11)
-       .font('Helvetica')
-       .fillColor(color)
-       .text(statusText, 50, badgeY + 80, { align: 'center', width: 495 });
-    
-    // Key metrics preview boxes - properly positioned
-    const yStart = 570;
-    const boxWidth = 150;
-    const boxHeight = 85;
-    const gap = 22;
-    
-    // Box 1: Technical Debt
-    doc.roundedRect(50, yStart, boxWidth, boxHeight, 8).fill('#f8fafc').stroke('#e2e8f0').lineWidth(1);
-    doc.fillColor('#64748b').fontSize(9).font('Helvetica').text('Technical Debt Ratio', 60, yStart + 18, { width: boxWidth - 20 });
-    doc.fillColor('#0f172a').fontSize(26).font('Helvetica-Bold').text(`${data.metrics.technicalDebtRatio.toFixed(1)}%`, 60, yStart + 38, { width: boxWidth - 20 });
-    
-    // Box 2: Security
-    const securityScore = data.metrics.securityPosture;
-    const secColor = securityScore >= 80 ? '#10b981' : securityScore >= 60 ? '#f59e0b' : '#ef4444';
-    doc.roundedRect(50 + boxWidth + gap, yStart, boxWidth, boxHeight, 8).fill('#f8fafc').stroke('#e2e8f0').lineWidth(1);
-    doc.fillColor('#64748b').fontSize(9).font('Helvetica').text('Security Posture', 60 + boxWidth + gap, yStart + 18, { width: boxWidth - 20 });
-    doc.fillColor(secColor).fontSize(26).font('Helvetica-Bold').text(securityScore.toString(), 60 + boxWidth + gap, yStart + 38, { width: boxWidth - 20 });
-    
-    // Box 3: AI Code
-    if (data.aiSummary) {
-        doc.roundedRect(50 + (boxWidth + gap) * 2, yStart, boxWidth, boxHeight, 8).fill('#f8fafc').stroke('#e2e8f0').lineWidth(1);
-        doc.fillColor('#64748b').fontSize(9).font('Helvetica').text('AI-Generated Code', 60 + (boxWidth + gap) * 2, yStart + 18, { width: boxWidth - 20 });
-        doc.fillColor('#3b82f6').fontSize(26).font('Helvetica-Bold').text(`${data.aiSummary.aiCodePercentage}%`, 60 + (boxWidth + gap) * 2, yStart + 38, { width: boxWidth - 20 });
-    }
-    
-    // Footer
-    doc.fillColor('#94a3b8')
-       .fontSize(9)
-       .font('Helvetica')
-       .text('Confidential - For Executive Use Only', 50, 750, { align: 'center', width: 495 });
+  const pageWidth = doc.page.width;
+  const pageHeight = doc.page.height;
+  const contentWidth = pageWidth - 100; // 50pt margins
+
+  // === HEADER BAND ===
+  const headerH = 280;
+  doc.save();
+  doc.rect(0, 0, pageWidth, headerH).fill('#0f172a');
+  doc.restore();
+
+  // === LOGO / MONOGRAM ===
+  doc.save();
+  doc.circle(pageWidth / 2, 50, 28).fill('#3b82f6');
+  doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(18)
+     .text('TDI', 50, 38, { align: 'center', width: contentWidth });
+  doc.restore();
+
+  // === STACKED HEADER TEXT ===
+  let y = 100;
+  const writeCentered = (text: string, yPos: number, size: number, font = 'Helvetica', color = '#ffffff') => {
+    doc.fillColor(color).font(font).fontSize(size);
+    const h = doc.heightOfString(text, { width: contentWidth, align: 'center' });
+    doc.text(text, 50, yPos, { width: contentWidth, align: 'center' });
+    return yPos + h;
+  };
+
+  y = writeCentered('Executive Technical Debt Report', y, 36, 'Helvetica-Bold', '#ffffff') + 12;
+  y = writeCentered(data.projectName, y, 20, 'Helvetica', '#cbd5e1') + 8;
+
+  const dateStr = `Generated: ${new Date(data.scanDate).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric'
+  })}`;
+  y = writeCentered(dateStr, y, 11, 'Helvetica', '#94a3b8') + 6;
+  y = writeCentered('Comprehensive Analysis: Code Quality • AI Detection • Security Audit', y, 9, 'Helvetica', '#94a3b8');
+
+  // === BADGE (responsive, non-overlapping) ===
+  const score = data.metrics.codeQualityScore;
+  const badgeColor = score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444';
+  const statusText = score >= 80 ? 'EXCELLENT' : score >= 60 ? 'GOOD' : 'NEEDS ATTENTION';
+
+  // Define safe vertical space for badge+labels (between header band and KPI area)
+  const topSafe = headerH + 16;
+  // keep ~160px at bottom for KPI previews; this is your card row height + padding
+  const bottomReserve = 160;
+  const bottomSafe = pageHeight - bottomReserve;
+
+  // Measure labels to reserve space below the circle
+  doc.font('Helvetica-Bold').fontSize(13);
+  const healthLabelH = doc.heightOfString('HEALTH SCORE', { width: contentWidth, align: 'center' });
+  doc.font('Helvetica').fontSize(11);
+  const statusLabelH = doc.heightOfString(statusText, { width: contentWidth, align: 'center' });
+  const labelBlock = healthLabelH + 6 + statusLabelH + 16; // labels + spacing
+
+  // Compute radius so everything fits: [topSafe .. bottomSafe - labelBlock]
+  const available = Math.max(0, (bottomSafe - labelBlock) - topSafe);
+  const radius = Math.max(56, Math.min(82, Math.floor(available / 2))); // clamp for aesthetics
+  const centerY = topSafe + radius;
+
+  // Draw rings
+  doc.save();
+  doc.lineWidth(3).strokeColor(badgeColor).circle(pageWidth / 2, centerY, radius + 6).stroke();
+  doc.circle(pageWidth / 2, centerY, radius).fill(badgeColor);
+  doc.circle(pageWidth / 2, centerY, radius - 10).fill('#ffffff');
+  doc.restore();
+
+  // Score number
+  doc.fillColor(badgeColor).font('Helvetica-Bold').fontSize(56)
+     .text(String(score), 50, centerY - 30, { width: contentWidth, align: 'center' });
+
+  // Labels directly under the circle (measured)
+  let labelY = centerY + radius + 12;
+  doc.font('Helvetica-Bold').fontSize(13).fillColor('#64748b')
+     .text('HEALTH SCORE', 50, labelY, { width: contentWidth, align: 'center' });
+  labelY += healthLabelH + 6;
+  doc.font('Helvetica').fontSize(11).fillColor(badgeColor)
+     .text(statusText, 50, labelY, { width: contentWidth, align: 'center' });
+  labelY += statusLabelH;
+
+  // === KPI PREVIEW CARDS (always below the label block) ===
+  const yStart = Math.max(labelY + 40, pageHeight - bottomReserve + 20); // ensure clear gap
+  const boxWidth = 150;
+  const boxHeight = 85;
+  const gap = 22;
+
+  // Card 1
+  doc.save();
+  doc.roundedRect(50, yStart, boxWidth, boxHeight, 8).fillAndStroke('#f8fafc', '#e2e8f0');
+  doc.fillColor('#64748b').font('Helvetica').fontSize(9).text('Technical Debt Ratio', 60, yStart + 18, { width: boxWidth - 20 });
+  doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(26)
+     .text(`${data.metrics.technicalDebtRatio.toFixed(1)}%`, 60, yStart + 38, { width: boxWidth - 20 });
+  doc.restore();
+
+  // Card 2
+  const securityScore = data.metrics.securityPosture;
+  const secColor = securityScore >= 80 ? '#10b981' : securityScore >= 60 ? '#f59e0b' : '#ef4444';
+  const b2x = 50 + boxWidth + gap;
+  doc.save();
+  doc.roundedRect(b2x, yStart, boxWidth, boxHeight, 8).fillAndStroke('#f8fafc', '#e2e8f0');
+  doc.fillColor('#64748b').font('Helvetica').fontSize(9).text('Security Posture', b2x + 10, yStart + 18, { width: boxWidth - 20 });
+  doc.fillColor(secColor).font('Helvetica-Bold').fontSize(26).text(String(securityScore), b2x + 10, yStart + 38, { width: boxWidth - 20 });
+  doc.restore();
+
+  // Card 3 (optional)
+  if (data.aiSummary) {
+    const b3x = 50 + (boxWidth + gap) * 2;
+    doc.save();
+    doc.roundedRect(b3x, yStart, boxWidth, boxHeight, 8).fillAndStroke('#f8fafc', '#e2e8f0');
+    doc.fillColor('#64748b').font('Helvetica').fontSize(9).text('AI-Generated Code', b3x + 10, yStart + 18, { width: boxWidth - 20 });
+    doc.fillColor('#3b82f6').font('Helvetica-Bold').fontSize(26).text(`${data.aiSummary.aiCodePercentage}%`, b3x + 10, yStart + 38, { width: boxWidth - 20 });
+    doc.restore();
+  }
+
+  // Footer (optional)
+  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica')
+     .text('Confidential - For Executive Use Only', 50, pageHeight - 92, { align: 'center', width: contentWidth });
 }
+
+
 
 function addExecutiveSummary(doc: PDFKit.PDFDocument, data: ReportData) {
     addSectionHeader(doc, 'Executive Summary');
