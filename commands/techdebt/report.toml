@@ -1,10 +1,11 @@
 prompt = """
-Generate a comprehensive technical debt report for the repository at: {{args}}
+Generate a comprehensive CTO-level technical debt report for the repository at: {{args}}
 
 Execute these tools in order:
 1. scan_repo with { "repoPath": "{{args}}" }
 2. dep_audit with { "repoPath": "{{args}}" }
-3. generate_report with the scan and audit results
+3. generate_report with { "scanResults": "<scan_json>", "auditResults": "<audit_json>", "repoPath": "{{args}}", "projectName": "<project_name>" }
 
-Provide an executive summary of the technical debt report.
+The report will be saved as techdebt-cto-report-YYYY-MM-DD.md in the scanned repository.
+Provide an executive summary of the key findings.
 """

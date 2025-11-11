@@ -672,15 +672,16 @@ server.registerTool(
 server.registerTool(
     'generate_report',
     {
-        description: 'Generates executive-level technical debt report with business impact analysis',
+        description: 'Generates executive-level technical debt report with business impact analysis and saves to file',
         inputSchema: z.object({
             scanResults: z.string().describe('JSON string from scan_repo'),
             auditResults: z.string().describe('JSON string from dep_audit'),
+            repoPath: z.string().describe('Path to the repository where report will be saved'),
             projectName: z.string().default('Project').describe('Name of the project')
         }).shape
     },
     async (input) => {
-        const { scanResults, auditResults, projectName } = input;
+        const { scanResults, auditResults, repoPath, projectName } = input;
         const scan = JSON.parse(scanResults);
         const audit = JSON.parse(auditResults);
         
@@ -865,13 +866,27 @@ Track these KPIs monthly:
             roi
         };
         
+        // Save report to file
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+        const reportPath = join(repoPath, `techdebt-cto-report-${timestamp}.md`);
+        
+        try {
+            await writeFile(reportPath, report, 'utf-8');
+            console.error(`[TechDebt] ✅ CTO Report saved to: ${reportPath}`);
+        } catch (error: any) {
+            console.error(`[TechDebt] ❌ Failed to save CTO report: ${error.message}`);
+        }
+        
         const result = {
             report,
-            executiveSummary
+            executiveSummary,
+            reportPath
         };
         
         return {
-            content: [{ type: 'text', text: report }]
+            content: [
+                { type: 'text', text: `# 📄 CTO Report Generated\n\n**Saved to:** \`${reportPath}\`\n\n---\n\n` + report }
+            ]
         } as any;
     }
 );

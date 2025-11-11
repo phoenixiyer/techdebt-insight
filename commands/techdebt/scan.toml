@@ -5,4 +5,4 @@ Use the scan_repo tool with { "repoPath": "{{args}}" }
 
 The scan will automatically save a markdown report to the repository folder.
 Provide a summary of the key findings from the scan results.
-""""
+"""
