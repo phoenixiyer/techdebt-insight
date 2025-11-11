@@ -229,7 +229,7 @@ That “install from URL” pattern is what the directory shows for Stripe/GitHu
 * **AI Detection Accuracy:** The AI detection module is based on empirical research (arXiv:2411.04299) which demonstrates an F1-score of ~82.5% in best-case scenarios. Results may vary based on model temperature, language, and code snippet length.
 * **Language Support:**
     * **Deep Metrics (Complexity, SQALE):** Currently uses local AST parsing supported for `TypeScript`, `JavaScript`, and `Python`.
-    * **AI & Pattern Analysis:** Uses Gemini 1.5 Pro, which supports generic analysis for almost any language (Go, Rust, Java, C++, etc.), but deep architectural metrics may be limited for non-native languages.
+    * **AI & Pattern Analysis:** Uses Gemini 2.5 Pro, which supports generic analysis for almost any language (Go, Rust, Java, C++, etc.), but deep architectural metrics may be limited for non-native languages.
 * **Security:** The security analyzer provides context-aware risk flags (e.g., "old code + missing validation"). It is **not** a substitute for dedicated SAST tools like CodeQL, Snyk, or the Gemini Security Command Center.
 
 ---
