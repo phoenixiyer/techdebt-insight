@@ -236,12 +236,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Built with ❤️ by [Arun Kumar G](https://github.com/arunkg)
+- Built by [Arun Kumar G](https://github.com/arunkg)
 - Inspired by the need for better technical debt management
 - Uses [Gemini CLI](https://geminicli.com) for the extension framework
 
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/arunkg">Arun Kumar G</a>
+ By <a href="https://github.com/arunkg">Arun Kumar G</a>
 </p>
