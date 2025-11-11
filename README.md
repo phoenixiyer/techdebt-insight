@@ -223,9 +223,14 @@ That “install from URL” pattern is what the directory shows for Stripe/GitHu
 
 ## ⚠️ Limitations / Known trade-offs
 
-* Complexity proxy is a **cheap heuristic** (token counts) — swap in Sonar, ESLint, radon, or gocyclo if you need formal metrics.
-* AI detection flags **patterns**, not provenance. Treat results as **indicators**, not proof.
-* Dependency audit requires local tools (`npm`, `pip-audit`). When missing, reports include `warnings[]` and continue.
+**Tech Debt Insight** is designed as a conversational baseline for technical debt, not a replacement for specialized static analysis tools.
+
+* **Heuristic Analysis:** The AI-based detection uses pattern matching and LLM inference to identify *likely* technical debt and AI-generated code. These are signals to prompt engineering discussions, not deterministic findings.
+* **AI Detection Accuracy:** The AI detection module is based on empirical research (arXiv:2411.04299) which demonstrates an F1-score of ~82.5% in best-case scenarios. Results may vary based on model temperature, language, and code snippet length.
+* **Language Support:**
+    * **Deep Metrics (Complexity, SQALE):** Currently uses local AST parsing supported for `TypeScript`, `JavaScript`, and `Python`.
+    * **AI & Pattern Analysis:** Uses Gemini 1.5 Pro, which supports generic analysis for almost any language (Go, Rust, Java, C++, etc.), but deep architectural metrics may be limited for non-native languages.
+* **Security:** The security analyzer provides context-aware risk flags (e.g., "old code + missing validation"). It is **not** a substitute for dedicated SAST tools like CodeQL, Snyk, or the Gemini Security Command Center.
 
 ---
 
