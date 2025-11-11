@@ -57,7 +57,7 @@ A comprehensive Gemini CLI extension that provides CTO-level technical debt insi
 - **Critical Path Risk** - Risk to critical business functions
 - **Vulnerability Tracking** - CVE/CWE identification with severity
 
-### 🤖 AI Code Detection (NEW!)
+### 🤖 AI Code Detection (Inspired by An Empirical Study on Automatically Detecting AI-Generated Source Code)
 
 - **AI vs Human Code Classification** - Identifies AI-generated code patterns
 - **Confidence Scoring** - 0-100% likelihood scores for each file
