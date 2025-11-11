@@ -1,0 +1,7 @@
+prompt = """
+Audit the dependencies for the repository at: {{args}}
+
+Use the dep_audit tool with { "repoPath": "{{args}}" }
+
+Provide a summary of vulnerabilities and outdated packages found.
+"""

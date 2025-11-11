@@ -1,0 +1,10 @@
+prompt = """
+Generate a comprehensive technical debt report for the repository at: {{args}}
+
+Execute these tools in order:
+1. scan_repo with { "repoPath": "{{args}}" }
+2. dep_audit with { "repoPath": "{{args}}" }
+3. generate_report with the scan and audit results
+
+Provide an executive summary of the technical debt report.
+"""

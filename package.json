@@ -1,0 +1,53 @@
+{
+  "name": "@arunkg/techdebt-insight",
+  "version": "0.1.0",
+  "description": "A Gemini CLI extension for analyzing and managing technical debt in your codebase",
+  "type": "module",
+  "main": "dist/example.js",
+  "bin": {
+    "techdebt-insight": "./dist/example.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/example.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "gemini",
+    "cli",
+    "extension",
+    "tech-debt",
+    "code-quality",
+    "static-analysis"
+  ],
+  "author": "Arun Kumar G",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arunkg/techdebt-insight.git"
+  },
+  "bugs": {
+    "url": "https://github.com/arunkg/techdebt-insight/issues"
+  },
+  "homepage": "https://github.com/arunkg/techdebt-insight#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.23.8",
+    "glob": "^11.0.0",
+    "fast-glob": "^3.3.2",
+    "fast-json-stable-stringify": "^2.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "commands",
+    "GEMINI.md",
+    "gemini-extension.json"
+  ]
+}

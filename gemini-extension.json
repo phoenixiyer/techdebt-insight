@@ -1,0 +1,35 @@
+{
+  "name": "techdebt-insight",
+  "displayName": "Tech Debt Insight",
+  "version": "0.1.0",
+  "description": "Production-grade technical debt analyzer with SQALE methodology, security scanning, and CTO-level business impact reports",
+  "author": "Arun Kumar G",
+  "publisher": "arunkg",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arunkg/techdebt-insight.git"
+  },
+  "categories": [
+    "Code Quality",
+    "Technical Debt",
+    "Code Analysis"
+  ],
+  "keywords": [
+    "tech-debt",
+    "code-quality",
+    "static-analysis",
+    "code-review"
+  ],
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "nodeServer": {
+      "command": "node",
+      "args": ["${extensionPath}${/}dist${/}example.js"],
+      "cwd": "${extensionPath}"
+    }
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ]
+}
