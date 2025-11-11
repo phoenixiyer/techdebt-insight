@@ -177,7 +177,7 @@ Everything above is **overrideable**: thresholds, weights, signals, and even whi
 > * Replace the prioritization function if needed
 > * Turn AI detection on/off or change signals
 
-This is a **framework for visibility** that AI can reason over — not a maturity scorecard.
+This is a **framework for visibility** that AI can reason over, not a maturity scorecard.
 
 
 ## 📊 Outputs
