@@ -1,0 +1,13 @@
+prompt = """
+Analyze the repository at {{args}} for AI-generated code patterns.
+
+Use the ai_code_scan tool with { "repoPath": "{{args}}" }
+
+The scan will:
+1. Detect AI-generated code patterns and hallmarks
+2. Calculate AI vs Human likelihood scores
+3. Identify security and quality risks
+4. Save a detailed report as ai-code-analysis-YYYY-MM-DD.md
+
+Provide a summary of the AI code detection findings.
+"""

@@ -18,7 +18,8 @@ import { promisify } from 'util';
 // Import analyzers
 import { scanFile, aggregateResults, ScanResult } from './src/scanner.js';
 import { calculateEnterpriseMetrics, generateBenchmarks, EnterpriseMetrics, BenchmarkComparison } from './src/calculators/enterpriseMetrics.js';
-
+import { analyzeAICode, generateAISummary, AICodeAnalysis, AICodeSummary } from './src/analyzers/aiCodeDetectorV2.js';
+import { generateExecutivePDF } from './src/reports/pdfGenerator.js';
 const execAsync = promisify(exec);
 
 // Create MCP server
@@ -60,7 +61,7 @@ async function calculateTestCoverage(repoPath: string): Promise<number> {
     return (testFiles.length / srcFiles.length) * 100;
 }
 
-function generateMarkdownReport(scanResult: ScanResult, repoPath: string): string {
+function generateMarkdownReport(scanResult: ScanResult, repoPath: string, aiSummary?: AICodeSummary): string {
     const timestamp = new Date().toISOString();
     const enterpriseMetrics = calculateEnterpriseMetrics(scanResult);
     const benchmarks = generateBenchmarks(enterpriseMetrics);
@@ -333,6 +334,36 @@ ${scanResult.businessImpact.recommendations.slice(3, 6).map((rec: string, i: num
 
 ---
 
+${aiSummary ? `
+## 🤖 AI Code Detection Analysis
+
+### Overview
+- **Total Files Analyzed:** ${aiSummary.totalFiles}
+- **AI-Generated Files:** ${aiSummary.aiGeneratedFiles} (${((aiSummary.aiGeneratedFiles / aiSummary.totalFiles) * 100).toFixed(1)}%)
+- **Human-Written Files:** ${aiSummary.humanWrittenFiles} (${((aiSummary.humanWrittenFiles / aiSummary.totalFiles) * 100).toFixed(1)}%)
+- **Mixed/Uncertain:** ${aiSummary.mixedFiles}
+
+### AI Code Metrics
+- **AI Code Percentage:** ${aiSummary.aiCodePercentage}%
+- **Detection Confidence:** ${aiSummary.confidenceScore}%
+- **Classification:** ${aiSummary.aiCodePercentage > 70 ? '🔴 HIGH - Majority AI-generated' : aiSummary.aiCodePercentage > 40 ? '🟡 MEDIUM - Significant AI code' : '🟢 LOW - Mostly human-written'}
+
+### Top AI Patterns Detected
+${aiSummary.topAIPatterns.slice(0, 5).map((p, i) => `${i + 1}. **${p.pattern.replace(/_/g, ' ').toUpperCase()}**: ${p.count} occurrences`).join('\n')}
+
+### Risk Assessment
+- 🛡️ **Security Risks:** ${aiSummary.riskAssessment.securityRisks} files
+- 🔧 **Maintenance Risks:** ${aiSummary.riskAssessment.maintenanceRisks} files
+- 📊 **Quality Risks:** ${aiSummary.riskAssessment.qualityRisks} files
+
+### AI Code Recommendations
+${aiSummary.recommendations.slice(0, 3).map((r, i) => `${i + 1}. ${r}`).join('\n')}
+
+> 💡 **Note:** Run \`/techdebt:ai-scan\` for a detailed AI code analysis report.
+
+---
+` : ''}
+
 ## 📝 Appendix: Methodology
 
 This report uses industry-standard methodologies:
@@ -421,8 +452,9 @@ server.registerTool(
             } as any;
         }
         
-        // Scan each file
+        // Scan each file (including AI detection)
         const fileResults = [];
+        const aiAnalyses: AICodeAnalysis[] = [];
         let scannedCount = 0;
         
         for (const file of files) {
@@ -435,6 +467,10 @@ server.registerTool(
                     file: relativePath,
                     ...result
                 });
+                
+                // Also run AI detection
+                const aiAnalysis = analyzeAICode(content, relativePath);
+                aiAnalyses.push(aiAnalysis);
                 
                 scannedCount++;
                 if (scannedCount % 10 === 0) {
@@ -455,11 +491,15 @@ server.registerTool(
         console.error(`[TechDebt] SQALE Rating: ${scanResult.summary.technicalDebt.sqaleRating}`);
         console.error(`[TechDebt] Estimated Cost: $${scanResult.businessImpact.financialCost.toFixed(2)}`);
         
+        // Generate AI summary
+        const aiSummary = generateAISummary(aiAnalyses);
+        console.error(`[TechDebt] AI Code Detection: ${aiSummary.aiCodePercentage}% AI-generated`);
+        
         // Generate markdown report
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
         const reportPath = join(repoPath, `techdebt-report-${timestamp}.md`);
         
-        const markdownReport = generateMarkdownReport(scanResult, repoPath);
+        const markdownReport = generateMarkdownReport(scanResult, repoPath, aiSummary);
         const enterpriseMetrics = calculateEnterpriseMetrics(scanResult);
         
         try {
@@ -866,37 +906,324 @@ Track these KPIs monthly:
             roi
         };
         
-        // Save report to file
+        // Save markdown report to file
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
         const reportPath = join(repoPath, `techdebt-cto-report-${timestamp}.md`);
+        const pdfPath = join(repoPath, `techdebt-cto-report-${timestamp}.pdf`);
         
         try {
             await writeFile(reportPath, report, 'utf-8');
-            console.error(`[TechDebt] ✅ CTO Report saved to: ${reportPath}`);
+            console.error(`[TechDebt] ✅ CTO Report (Markdown) saved to: ${reportPath}`);
         } catch (error: any) {
             console.error(`[TechDebt] ❌ Failed to save CTO report: ${error.message}`);
+        }
+        
+        // Generate PDF report
+        try {
+            // Calculate enterprise metrics for PDF
+            const enterpriseMetrics = calculateEnterpriseMetrics(scan);
+            
+            await generateExecutivePDF(pdfPath, {
+                projectName,
+                scanDate: new Date().toISOString(),
+                metrics: enterpriseMetrics,
+                scanResults: scan,
+                aiSummary: scan.aiSummary,
+                auditSummary: audit
+            });
+            
+            console.error(`[TechDebt] ✅ CTO Report (PDF) saved to: ${pdfPath}`);
+        } catch (error: any) {
+            console.error(`[TechDebt] ⚠️ PDF generation failed: ${error.message}`);
+            console.error(`[TechDebt] Markdown report is still available at: ${reportPath}`);
         }
         
         const result = {
             report,
             executiveSummary,
-            reportPath
+            reportPath,
+            pdfPath
         };
         
         return {
             content: [
-                { type: 'text', text: `# 📄 CTO Report Generated\n\n**Saved to:** \`${reportPath}\`\n\n---\n\n` + report }
+                { type: 'text', text: `# 📄 CTO Report Generated\n\n**Markdown Report:** \`${reportPath}\`\n**PDF Report:** \`${pdfPath}\`\n\n---\n\n` + report }
             ]
         } as any;
     }
 );
+
+// Register AI code detection tool
+server.registerTool(
+    'ai_code_scan',
+    {
+        description: 'Analyzes codebase for AI-generated code patterns and provides confidence scoring',
+        inputSchema: z.object({
+            repoPath: z.string().describe('Path to the repository to scan for AI-generated code'),
+            includeGlobs: z.array(z.string())
+                .default(['**/*.{js,ts,jsx,tsx,py,java,go,rs,c,cpp,cs,php,rb,swift,kt}'])
+                .describe('File patterns to include in the AI scan')
+        }).shape
+    },
+    async (input) => {
+        const { repoPath, includeGlobs } = input;
+        
+        console.error(`[AI Scan] Starting AI code detection in: ${repoPath}`);
+        
+        // Find all files
+        const files = await glob(includeGlobs, {
+            cwd: repoPath,
+            absolute: true,
+            ignore: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.git/**', '**/vendor/**']
+        });
+        
+        console.error(`[AI Scan] Found ${files.length} files to analyze`);
+        
+        // Analyze each file
+        const analyses: AICodeAnalysis[] = [];
+        
+        for (const file of files) {
+            try {
+                const content = await readFile(file, 'utf-8');
+                const relativePath = relative(repoPath, file);
+                const analysis = analyzeAICode(content, relativePath);
+                analyses.push(analysis);
+            } catch (error: any) {
+                console.error(`[AI Scan] Error analyzing ${file}: ${error.message}`);
+            }
+        }
+        
+        // Generate summary
+        const summary = generateAISummary(analyses);
+        
+        // Sort files by AI likelihood
+        const topAIFiles = analyses
+            .filter(a => a.aiLikelihood > 50)
+            .sort((a, b) => b.aiLikelihood - a.aiLikelihood)
+            .slice(0, 20);
+        
+        const topHumanFiles = analyses
+            .filter(a => a.humanLikelihood > 70)
+            .sort((a, b) => b.humanLikelihood - a.humanLikelihood)
+            .slice(0, 10);
+        
+        // Generate markdown report
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+        const reportPath = join(repoPath, `ai-code-analysis-${timestamp}.md`);
+        
+        const markdownReport = generateAIMarkdownReport(summary, topAIFiles, topHumanFiles, repoPath);
+        
+        try {
+            await writeFile(reportPath, markdownReport, 'utf-8');
+            console.error(`[AI Scan] ✅ AI Analysis Report saved to: ${reportPath}`);
+        } catch (error: any) {
+            console.error(`[AI Scan] ❌ Failed to save report: ${error.message}`);
+        }
+        
+        // Generate executive summary for terminal
+        const executiveSummary = `
+# 🤖 AI Code Detection Summary
+
+## Overview
+- **Total Files Analyzed**: ${summary.totalFiles}
+- **AI-Generated Files**: ${summary.aiGeneratedFiles} (${((summary.aiGeneratedFiles / summary.totalFiles) * 100).toFixed(1)}%)
+- **Human-Written Files**: ${summary.humanWrittenFiles} (${((summary.humanWrittenFiles / summary.totalFiles) * 100).toFixed(1)}%)
+- **Mixed/Uncertain**: ${summary.mixedFiles}
+
+## AI Code Percentage: ${summary.aiCodePercentage}%
+**Confidence Score**: ${summary.confidenceScore}%
+
+## Top AI Patterns Detected
+${summary.topAIPatterns.map((p, i) => `${i + 1}. **${p.pattern}**: ${p.count} occurrences`).join('\n')}
+
+## Risk Assessment
+- 🛡️ **Security Risks**: ${summary.riskAssessment.securityRisks} files
+- 🔧 **Maintenance Risks**: ${summary.riskAssessment.maintenanceRisks} files
+- 📊 **Quality Risks**: ${summary.riskAssessment.qualityRisks} files
+
+## Recommendations
+${summary.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
+
+---
+📄 **Full Report**: \`${reportPath}\`
+`;
+        
+        const result = {
+            summary,
+            topAIFiles: topAIFiles.map(f => ({
+                file: f.file,
+                aiLikelihood: f.aiLikelihood,
+                patterns: f.patterns.length,
+                topPatterns: f.patterns.slice(0, 3).map(p => p.type)
+            })),
+            topHumanFiles: topHumanFiles.map(f => ({
+                file: f.file,
+                humanLikelihood: f.humanLikelihood
+            })),
+            reportPath,
+            executiveSummary
+        };
+        
+        return {
+            content: [
+                { type: 'text', text: executiveSummary + '\n\n' + JSON.stringify(result, null, 2) }
+            ]
+        } as any;
+    }
+);
+
+// Helper function to generate AI markdown report
+function generateAIMarkdownReport(
+    summary: AICodeSummary,
+    topAIFiles: AICodeAnalysis[],
+    topHumanFiles: AICodeAnalysis[],
+    repoPath: string
+): string {
+    const timestamp = new Date().toISOString();
+    
+    return `# 🤖 AI Code Detection Report
+**Repository**: ${repoPath}
+**Generated**: ${timestamp}
+
+---
+
+## 📊 Executive Summary
+
+### Overall Statistics
+- **Total Files Analyzed**: ${summary.totalFiles}
+- **AI-Generated Files**: ${summary.aiGeneratedFiles} (${((summary.aiGeneratedFiles / summary.totalFiles) * 100).toFixed(1)}%)
+- **Human-Written Files**: ${summary.humanWrittenFiles} (${((summary.humanWrittenFiles / summary.totalFiles) * 100).toFixed(1)}%)
+- **Mixed/Uncertain Files**: ${summary.mixedFiles} (${((summary.mixedFiles / summary.totalFiles) * 100).toFixed(1)}%)
+
+### AI Code Metrics
+- **AI Code Percentage**: ${summary.aiCodePercentage}%
+- **Detection Confidence**: ${summary.confidenceScore}%
+
+### Classification
+${summary.aiCodePercentage > 70 ? '🔴 **HIGH**: Majority of codebase appears AI-generated' :
+  summary.aiCodePercentage > 40 ? '🟡 **MEDIUM**: Significant AI-generated code detected' :
+  '🟢 **LOW**: Mostly human-written code'}
+
+---
+
+## 🎯 Top AI Patterns Detected
+
+${summary.topAIPatterns.map((p, i) => `${i + 1}. **${p.pattern.replace(/_/g, ' ').toUpperCase()}**
+   - Occurrences: ${p.count} files
+   - Impact: ${p.count > summary.totalFiles * 0.5 ? 'High' : p.count > summary.totalFiles * 0.2 ? 'Medium' : 'Low'}`).join('\n\n')}
+
+---
+
+## ⚠️ Risk Assessment
+
+### Security Risks: ${summary.riskAssessment.securityRisks} files
+${summary.riskAssessment.securityRisks > 0 ? 
+`AI-generated code may lack proper edge case handling and input validation. Review these files for:
+- Missing null/undefined checks
+- Inadequate error handling
+- Potential injection vulnerabilities
+- Unvalidated user inputs` : 
+'✅ No significant security risks detected'}
+
+### Maintenance Risks: ${summary.riskAssessment.maintenanceRisks} files
+${summary.riskAssessment.maintenanceRisks > 0 ?
+`Code maintainability concerns detected:
+- Generic variable names reducing code readability
+- Repetitive code structures
+- Lack of meaningful abstractions
+- Poor code organization` :
+'✅ Code appears maintainable'}
+
+### Quality Risks: ${summary.riskAssessment.qualityRisks} files
+${summary.riskAssessment.qualityRisks > 0 ?
+`Code quality issues found:
+- Excessive boilerplate code
+- Generic or unhelpful comments
+- Inconsistent coding patterns
+- Potential code smells` :
+'✅ Code quality looks good'}
+
+---
+
+## 🔴 Top 20 AI-Generated Files
+
+${topAIFiles.length > 0 ? topAIFiles.map((file, i) => `### ${i + 1}. \`${file.file}\`
+**AI Likelihood**: ${file.aiLikelihood}% | **Human Likelihood**: ${file.humanLikelihood}%
+
+**Detected Patterns**:
+${file.patterns.map(p => `- **${p.type}** (${p.severity}): ${p.description} [Confidence: ${p.confidence}%]`).join('\n')}
+
+**Quality Indicators**:
+- Style Consistency: ${file.indicators.styleConsistency}%
+- Comment Quality: ${file.indicators.commentQuality}%
+- Naming Patterns: ${file.indicators.namingPatterns}%
+- Code Structure: ${file.indicators.codeStructure}%
+- Error Handling: ${file.indicators.errorHandling}%
+
+**File Metrics**:
+- Total Lines: ${file.metadata.totalLines}
+- Code Lines: ${file.metadata.codeLines}
+- Comment Lines: ${file.metadata.commentLines}
+- Blank Lines: ${file.metadata.blankLines}
+
+---
+`).join('\n') : 'No files with high AI likelihood detected.'}
+
+## 🟢 Top 10 Human-Written Files
+
+${topHumanFiles.length > 0 ? topHumanFiles.map((file, i) => `${i + 1}. **\`${file.file}\`** - Human Likelihood: ${file.humanLikelihood}%`).join('\n') : 'No files with high human likelihood detected.'}
+
+---
+
+## 💡 Recommendations
+
+${summary.recommendations.map((rec, i) => `${i + 1}. ${rec}`).join('\n')}
+
+---
+
+## 📋 Action Items
+
+### Immediate (Week 1)
+1. Review all files with AI likelihood > 80% for security vulnerabilities
+2. Implement comprehensive test coverage for AI-generated code sections
+3. Add proper error handling and input validation
+
+### Short-term (Month 1)
+1. Refactor generic variable names and improve code readability
+2. Remove boilerplate code and improve comment quality
+3. Establish code review guidelines for AI-generated code
+4. Set up automated AI code detection in CI/CD pipeline
+
+### Long-term (Quarter 1)
+1. Create team guidelines for using AI coding assistants
+2. Implement quality gates for AI-generated code
+3. Train team on identifying and improving AI-generated code
+4. Monitor AI code percentage trends over time
+
+---
+
+## 📈 Best Practices for AI-Generated Code
+
+1. **Always Review**: Never merge AI-generated code without human review
+2. **Test Thoroughly**: AI code may miss edge cases - add comprehensive tests
+3. **Refactor**: Improve variable names, comments, and structure
+4. **Validate Security**: Check for injection vulnerabilities and proper input validation
+5. **Document Origin**: Mark AI-generated sections for future reference
+6. **Continuous Monitoring**: Track AI code percentage and quality metrics
+
+---
+
+*Report generated by Tech Debt Insight - AI Code Detection Module*
+*Timestamp: ${timestamp}*
+`;
+}
 
 // Start the server with stdio transport
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
     console.error('Tech Debt Insight MCP Server started successfully');
-    console.error('Available tools: scan_repo, dep_audit, generate_report');
+    console.error('Available tools: scan_repo, dep_audit, generate_report, ai_code_scan');
 }
 
 main().catch((error) => {

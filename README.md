@@ -57,9 +57,25 @@ A comprehensive Gemini CLI extension that provides CTO-level technical debt insi
 - **Critical Path Risk** - Risk to critical business functions
 - **Vulnerability Tracking** - CVE/CWE identification with severity
 
+### 🤖 AI Code Detection (NEW!)
+
+- **AI vs Human Code Classification** - Identifies AI-generated code patterns
+- **Confidence Scoring** - 0-100% likelihood scores for each file
+- **Pattern Detection** - Detects hallmarks of AI-generated code:
+  - Generic comments and variable names
+  - Boilerplate code patterns
+  - Excessive style consistency
+  - Missing edge case handling
+  - AI tool signatures (Copilot, ChatGPT, etc.)
+- **Risk Assessment** - Security, maintenance, and quality risks
+- **Dedicated AI Report** - Detailed `ai-code-analysis-YYYY-MM-DD.md`
+
 ### 📄 Comprehensive Reporting
 
 - **Markdown Reports** - Saved locally as `techdebt-report-YYYY-MM-DD.md`
+- **AI Analysis Reports** - Saved as `ai-code-analysis-YYYY-MM-DD.md`
+- **CTO Reports** - Executive-level `techdebt-cto-report-YYYY-MM-DD.md`
+- **PDF Executive Reports** - Professional PDF reports with charts and metrics (NEW!)
 - **Terminal Display** - Executive summary shown in terminal
 - **Benchmark Comparisons** - Your metrics vs industry standards
 - **ROI Projections** - Investment required and expected returns
@@ -116,11 +132,14 @@ A comprehensive Gemini CLI extension that provides CTO-level technical debt insi
 ### Basic Commands
 
 ```bash
-# Scan the current directory
+# Scan the current directory (includes AI detection)
 gemini techdebt:scan .
 
 # Scan a specific directory
 gemini techdebt:scan /path/to/your/repo
+
+# AI code detection only
+/techdebt:ai-scan .
 
 # Audit dependencies only
 /techdebt:audit .
@@ -128,6 +147,15 @@ gemini techdebt:scan /path/to/your/repo
 # Generate full CTO report
 /techdebt:report .
 ```
+
+### Command Details
+
+| Command | Description | Report Generated |
+|---------|-------------|------------------|
+| `/techdebt:scan` | Complete technical debt analysis with AI detection | `techdebt-report-YYYY-MM-DD.md` |
+| `/techdebt:ai-scan` | Dedicated AI code detection analysis | `ai-code-analysis-YYYY-MM-DD.md` |
+| `/techdebt:audit` | Dependency security and version audit | Terminal output only |
+| `/techdebt:report` | Executive CTO-level comprehensive report | `techdebt-cto-report-YYYY-MM-DD.md` + PDF |
 
 ## ⚙️ Configuration
 

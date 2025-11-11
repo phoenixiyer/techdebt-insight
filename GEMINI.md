@@ -11,6 +11,7 @@ Performs comprehensive enterprise-level code analysis with 30+ metrics including
 - Developer Productivity (Velocity Impact, Focus Time, Team Satisfaction)
 - Security & Compliance Posture
 - Business Impact Assessment with ROI projections
+- **AI Code Detection** - Identifies AI-generated code patterns (NEW!)
 
 **When to use:** User wants complete technical debt analysis
 
@@ -22,6 +23,7 @@ Performs comprehensive enterprise-level code analysis with 30+ metrics including
 - Executive summary displayed in terminal (markdown format)
 - Full JSON scan results
 - Detailed markdown report saved to `techdebt-report-YYYY-MM-DD.md`
+- **AI code analysis section included in report**
 
 **Key Metrics Explained:**
 - **TDR <5%**: Excellent | **<25%**: Acceptable | **>40%**: Critical
@@ -30,6 +32,7 @@ Performs comprehensive enterprise-level code analysis with 30+ metrics including
 - **DORA Elite**: Multiple deploys/day, <15% failure rate
 - **Cyclomatic Complexity**: Number of code paths (lower is better)
 - **Cognitive Complexity**: How hard code is to understand (lower is better)
+- **AI Code %**: <30% mostly human, 30-70% mixed, >70% mostly AI-generated
 
 ### 2. dep_audit
 **Purpose**: Audits dependencies for security vulnerabilities and outdated packages.
@@ -59,14 +62,59 @@ Performs comprehensive enterprise-level code analysis with 30+ metrics including
 **Input**:
 - `scanResults`: JSON string from scan_repo (required)
 - `auditResults`: JSON string from dep_audit (required)
+- `repoPath`: Path to repository where report will be saved (required)
 - `projectName`: Name of the project (optional)
 
 **Output**:
-- Markdown formatted executive report
+- Markdown formatted executive report saved to `techdebt-cto-report-YYYY-MM-DD.md`
+- **Professional PDF report** saved to `techdebt-cto-report-YYYY-MM-DD.pdf` (NEW!)
 - Critical actions required
 - ROI analysis
 - Remediation timeline
 - Success metrics
+
+**PDF Report Features**:
+- Executive cover page with health score badge
+- Color-coded KPI metrics (green/yellow/red)
+- Visual charts and progress bars
+- DORA metrics visualization
+- AI code detection analysis (if available)
+- Strategic recommendations with priority tags
+- Professional typography and layout for C-level executives
+
+### 4. ai_code_scan (NEW!)
+**Purpose**: Dedicated AI code detection and analysis tool.
+
+**When to use**:
+- User asks about "AI-generated code", "Copilot", "ChatGPT code"
+- User wants to know if code is AI-generated or human-written
+- User mentions "code quality" in context of AI tools
+- User wants to assess risks of AI-generated code
+
+**Input**:
+- `repoPath`: Path to repository (required)
+- `includeGlobs`: File patterns to scan (optional)
+
+**Output**:
+- AI vs Human likelihood scores for each file
+- Detected AI patterns (generic comments, boilerplate, etc.)
+- Security, maintenance, and quality risk assessment
+- Detailed report saved to `ai-code-analysis-YYYY-MM-DD.md`
+- Actionable recommendations
+
+**AI Detection Patterns**:
+- Generic/excessive comments
+- Boilerplate code structures
+- Generic variable names (data, result, temp, etc.)
+- Perfect indentation consistency
+- Missing edge case handling
+- AI tool signatures in comments
+- Repetitive code patterns
+
+**Risk Categories**:
+- **Security**: Missing validation, inadequate error handling
+- **Maintenance**: Generic names, repetitive structures
+- **Quality**: Boilerplate code, unhelpful comments
 
 ## How to Help Users
 
@@ -89,6 +137,14 @@ Performs comprehensive enterprise-level code analysis with 30+ metrics including
 3. Present the report in a clear, business-focused manner
 4. Emphasize ROI and productivity impact
 5. Provide actionable next steps
+
+### For AI Code Detection:
+1. Use `ai_code_scan` for dedicated AI analysis
+2. Explain AI likelihood scores (>70% = likely AI, <30% = likely human)
+3. Highlight security risks from AI-generated code
+4. Recommend code review for high AI-likelihood files
+5. Suggest best practices for using AI coding assistants
+6. Note that `scan_repo` also includes AI detection automatically
 
 ## Response Guidelines
 
