@@ -83,38 +83,36 @@ function addCoverPage(doc: PDFKit.PDFDocument, data: ReportData) {
     
     // Main Title - properly spaced
     doc.fillColor('#ffffff')
-       .fontSize(38)
+       .fontSize(36)
        .font('Helvetica-Bold')
-       .text('Executive Technical Debt Report', 50, 105, { 
+       .text('Executive Technical Debt Report', 50, 100, { 
            align: 'center', 
-           width: 495,
-           lineGap: 5
+           width: 495
        });
     
     // Project Name - with proper spacing below title
-    doc.fontSize(22)
+    doc.fontSize(20)
        .font('Helvetica')
-       .fillColor('#94a3b8')
-       .text(data.projectName, 50, 175, { 
+       .fillColor('#cbd5e1')
+       .text(data.projectName, 50, 155, { 
            align: 'center', 
-           width: 495,
-           lineGap: 3
+           width: 495
        });
     
     // Date - properly spaced
     doc.fontSize(11)
-       .fillColor('#cbd5e1')
+       .fillColor('#94a3b8')
        .font('Helvetica')
        .text(`Generated: ${new Date(data.scanDate).toLocaleDateString('en-US', {
            year: 'numeric',
            month: 'long',
            day: 'numeric'
-       })}`, 50, 220, { align: 'center', width: 495 });
+       })}`, 50, 195, { align: 'center', width: 495 });
     
     // Report type subtitle
     doc.fontSize(9)
        .fillColor('#94a3b8')
-       .text('Comprehensive Analysis: Code Quality • AI Detection • Security Audit', 50, 245, { 
+       .text('Comprehensive Analysis: Code Quality • AI Detection • Security Audit', 50, 220, { 
            align: 'center', 
            width: 495 
        });
