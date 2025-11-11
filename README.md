@@ -1,13 +1,17 @@
-# Tech Debt Insight 🔍
+## Tech Debt Insight
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/arunkg/techdebt-insight?style=social)](https://github.com/arunkg/techdebt-insight/stargazers)
+Enterprise-grade technical debt analysis for any codebase, delivered as a **Gemini CLI extension**.
+Think of this as a **baseline, extensible framework** to *discover, visualize, and reason about* tech debt. It ships sensible defaults, but **every rule/threshold/weight is configurable**.
 
-**Enterprise-grade technical debt analysis for any codebase.**
+> **Not prescriptive.** Different orgs define tech debt differently. Use this as a **starting point**; fork/tune to your standards.
 
-A comprehensive Gemini CLI extension that provides CTO-level technical debt insights with industry-standard KPIs, DORA metrics, and actionable business impact assessments. Generate detailed markdown reports that are saved locally and displayed in your terminal.
 
-![Tech Debt Insight Demo](https://via.placeholder.com/800x400.png?text=Tech+Debt+Insight+Demo)
+## ✨ What it does (quick)
+
+* Scans code for hotspots (long files, complexity, duplication, missing tests), dependency drift, security smells.
+* Generates **CTO-ready reports** (Markdown + optional PDF) with prioritized actions, effort/impact, and a 2–4 week plan.
+* Includes **AI Code Detection** to flag likely AI-generated patterns (heuristic, configurable).
+* Works locally or in CI, across monorepos/services.
 
 ## ✨ Features
 
@@ -81,144 +85,164 @@ A comprehensive Gemini CLI extension that provides CTO-level technical debt insi
 - **ROI Projections** - Investment required and expected returns
 - **Strategic Recommendations** - Short, medium, and long-term actions
 
-## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 18 or higher
-- npm or yarn
-- Gemini CLI (`npm install -g @gemini/cli`)
+## 🔧 Installation
 
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/arunkg/techdebt-insight.git
-   cd techdebt-insight
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Build the extension**
-   ```bash
-   npm run build
-   ```
-
-4. **Test the server (optional)**
-   ```bash
-   node test-server.js
-   ```
-   You should see: ✅ Server started successfully!
-
-5. **Link the extension to Gemini CLI**
-   ```bash
-   # If already installed, uninstall first
-   gemini extensions uninstall techdebt-insight
-   
-   # Link the extension
-   gemini extensions link .
-   ```
-
-6. **Verify the installation**
-   ```bash
-   gemini
-   ```
-   Then type `/mcp` to see the MCP servers. The `nodeServer` should show as connected (🟢).
-
-## 🛠️ Usage
-
-### Basic Commands
+### Option A — Install from GitHub (recommended for users)
 
 ```bash
-# Scan the current directory (includes AI detection)
+gemini extensions install https://github.com/phoenixiyer/techdebt-insight
+```
+
+### Option B — Local dev (for contributors)
+
+```bash
+git clone https://github.com/phoenixiyer/techdebt-insight.git
+cd techdebt-insight
+npm install
+npm run build
+gemini extensions link .
+```
+
+Now restart `gemini` and run `/mcp` — you should see the Node server connected. (Your repo already documents this flow.) ([GitHub][1])
+
+---
+
+## 🚀 Usage
+
+Common commands:
+
+```bash
+# Full analysis (tech debt + AI detection) on current dir
 gemini techdebt:scan .
 
-# Scan a specific directory
-gemini techdebt:scan /path/to/your/repo
-
-# AI code detection only
+# Dedicated AI code detection only
 /techdebt:ai-scan .
 
-# Audit dependencies only
+# Dependency audit only
 /techdebt:audit .
 
-# Generate full CTO report
+# Executive CTO report (Markdown + optional PDF)
 /techdebt:report .
 ```
 
-### Command Details
+> Tip: You can also pass an absolute path instead of `.`
 
-| Command | Description | Report Generated |
-|---------|-------------|------------------|
-| `/techdebt:scan` | Complete technical debt analysis with AI detection | `techdebt-report-YYYY-MM-DD.md` |
-| `/techdebt:ai-scan` | Dedicated AI code detection analysis | `ai-code-analysis-YYYY-MM-DD.md` |
-| `/techdebt:audit` | Dependency security and version audit | Terminal output only |
-| `/techdebt:report` | Executive CTO-level comprehensive report | `techdebt-cto-report-YYYY-MM-DD.md` + PDF |
 
-## ⚙️ Configuration
+## ⚙️ Configuration (start here to de-opinionate)
 
-Create a `.techdebt.json` file in your project root to customize the analysis:
+Create a `.techdebt.json` in your repo root:
 
 ```json
 {
-  "ignorePatterns": ["**/node_modules/**", "**/dist/**", "**/*.test.js"],
+  "ignorePatterns": ["**/node_modules/**", "**/dist/**", "**/*.generated.*"],
   "rules": {
-    "maxFileLines": 500,
-    "maxComplexity": 10,
+    "maxFileLines": 600,
+    "complexityTokens": ["if","for","while","case","catch","&&","||"],
+    "dupLongLineLen": 120,
+    "dupRatioThreshold": 2.0,
     "requireTests": true
   },
+  "weights": {
+    "impact": { "security": 4, "availability": 3, "velocity": 2, "quality": 1 },
+    "effortPenaltyLarge": 1
+  },
   "dependencies": {
-    "audit": true,
+    "auditNode": true,
+    "auditPython": true,
     "ignore": ["devDependencies"]
+  },
+  "aiDetection": {
+    "enabled": true,
+    "riskThreshold": 0.6,
+    "signals": ["boilerplate","generic-names","edge-case-gaps","style-uniformity","tool-signature"]
+  },
+  "report": {
+    "pdf": true,
+    "ctoReport": true
   }
 }
 ```
 
-## 🔄 CI/CD Integration
+Everything above is **overrideable**: thresholds, weights, signals, and even which audits to run. (You already reference this format later in the README; moving it earlier puts the “not opinionated” story front-and-center.) ([GitHub][1])
 
-Add Tech Debt Insight to your GitHub Actions workflow:
+
+## 🧭 Positioning (useful when someone says “opinionated”)
+
+> **Baseline, not verdict.**
+> This extension provides **neutral primitives** (long files, complexity, duplication, test gaps, dependency drift) and a **pluggable scoring** layer.
+>
+> * Swap thresholds/weights to match your standards
+> * Add your own detectors (ESLint, SonarQube, radon, gocyclo, etc.)
+> * Replace the prioritization function if needed
+> * Turn AI detection on/off or change signals
+
+This is a **framework for visibility** that AI can reason over — not a maturity scorecard.
+
+
+## 📊 Outputs
+
+* `techdebt-report-YYYY-MM-DD.md` — developer-level findings
+* `ai-code-analysis-YYYY-MM-DD.md` — AI detection details
+* `techdebt-cto-report-YYYY-MM-DD.md` — exec summary with Top-10 actions
+* `techdebt-cto-report-YYYY-MM-DD.pdf` — optional PDF (if enabled)
+
+
+## 🧪 CI example (GitHub Actions)
+
+Use the *install-from-GitHub* pattern (works well in CI):
 
 ```yaml
-# .github/workflows/techdebt.yml
 name: Tech Debt Analysis
-
 on: [push, pull_request]
 
 jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-      - run: npm install -g @gemini/cli
-      - run: gemini extensions install arunkg/techdebt-insight
+          node-version: '20'
+      - run: gemini extensions install https://github.com/phoenixiyer/techdebt-insight
       - run: gemini techdebt:scan . --fail-on=high
 ```
 
-## 📊 Example Output
+That “install from URL” pattern is what the directory shows for Stripe/GitHub/Grafana extensions. ([Gemini CLI][2])
 
-```
-🔍 Tech Debt Analysis Report
+---
 
-📂 Scanned: /path/to/your/repo
-📊 Found 42 issues (12 high, 18 medium, 12 low)
+## 🔒 Privacy & Safety
 
-🚨 High Priority Issues:
-- [CRIT] Security vulnerability in lodash@4.17.15
-- [HIGH] Complex function in src/utils/helpers.js (complexity: 32)
-- [HIGH] Missing tests for src/components/PaymentForm.jsx
+* No code leaves your machine unless your Gemini model/provider is remote.
+* External tools (`npm outdated`, `pip-audit`) are executed locally; failures degrade gracefully to warnings.
+* You control which paths are scanned via `ignorePatterns`.
+* AI detection is **heuristic** and **not a compliance mechanism** — use it as a conversation starter, not a gate.
 
-✅ Recommendations:
-1. Update lodash to latest version (4.17.21+)
-2. Refactor complex function into smaller units
-3. Add unit tests for PaymentForm component
+---
 
-📝 Full report saved to: ./techdebt-report-20231110.html
-```
+## ⚠️ Limitations / Known trade-offs
+
+* Complexity proxy is a **cheap heuristic** (token counts) — swap in Sonar, ESLint, radon, or gocyclo if you need formal metrics.
+* AI detection flags **patterns**, not provenance. Treat results as **indicators**, not proof.
+* Dependency audit requires local tools (`npm`, `pip-audit`). When missing, reports include `warnings[]` and continue.
+
+---
+
+## 🧩 Extending
+
+* Add detectors by calling them in the MCP tool and merging their JSON into the scoring step.
+* Replace prioritization by editing the weights function.
+* Create your own report templates (Markdown or PDF) - the command layer is just prompts.
+
+---
+
+## 🆘 Troubleshooting
+
+* If `/mcp` shows **disconnected**: ensure `dist/example.js` exists and `gemini-extension.json` points to it; avoid `console.log` (stdout).
+* Node ≥ 18.17 (prefer 20).
+* Re-link after build: `gemini extensions link .`
+* For debug logs, use `stderr`.
 
 ## 🤝 Contributing
 
